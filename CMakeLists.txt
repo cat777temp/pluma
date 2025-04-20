@@ -17,9 +17,12 @@ if(MSVC)
     add_compile_options(/W4)
     add_definitions(-DPLUMA_STATIC -DPLUMA_EXPORTS)
 else()
-    add_compile_options(-Wall -Wextra -O3)
+    add_compile_options(-Wall -Wextra -O3 -fPIC)
     add_definitions(-DPLUMA_STATIC -DPLUMA_EXPORTS)
 endif()
+
+# 启用位置无关代码（PIC）
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Pluma 库源文件
 set(PLUMA_SOURCES

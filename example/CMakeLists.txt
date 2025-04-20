@@ -29,6 +29,9 @@ set(PLUGIN_SOURCES
 add_library(warrior_interface STATIC ${INTERFACE_SOURCES})
 target_link_libraries(warrior_interface pluma)
 
+# 确保接口库使用PIC编译
+set_property(TARGET warrior_interface PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 # 添加主程序
 add_executable(warrior_host ${HOST_SOURCES})
 target_link_libraries(warrior_host pluma warrior_interface)
