@@ -86,7 +86,7 @@ jobs:
 
     # 上传构建产物作为工作流的成品
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pluma-${{ matrix.os }}-${{ matrix.c_compiler }}
         path: artifacts/
