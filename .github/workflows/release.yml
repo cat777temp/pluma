@@ -1,0 +1,48 @@
+# 专门处理Release事件的工作流
+name: Release Assets
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  upload-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 下载所有构建产物
+      - name: Download all workflow artifacts
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: cmake-multi-platform.yml
+          workflow_conclusion: success
+          path: all-artifacts
+          
+      # 下载源代码包
+      - name: Download source package
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: create-source-package.yml
+          workflow_conclusion: success
+          path: source-artifacts
+          
+      # 准备上传的文件
+      - name: Prepare files for upload
+        run: |
+          mkdir -p release-assets
+          find all-artifacts -type f -name "*.zip" -o -name "*.tar.gz" | xargs -I{} cp {} release-assets/
+          find source-artifacts -type f -name "*.zip" -o -name "*.tar.gz" | xargs -I{} cp {} release-assets/
+          ls -la release-assets/
+          
+      # 上传到Release
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-assets/*
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
