@@ -1,0 +1,47 @@
+# 创建源代码包的工作流
+name: Create Source Package
+
+on:
+  release:
+    types: [created]
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  create-source-package:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取完整历史记录
+    
+    - name: Set version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "release" ]]; then
+          echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+        else
+          echo "VERSION=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create source package
+      run: |
+        mkdir -p artifacts
+        git archive --format=zip --output=artifacts/pluma-source-${{ steps.version.outputs.VERSION }}.zip HEAD
+        git archive --format=tar.gz --output=artifacts/pluma-source-${{ steps.version.outputs.VERSION }}.tar.gz HEAD
+    
+    - name: Upload source package as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: pluma-source
+        path: artifacts/
+        retention-days: 30
+    
+    - name: Upload source package to release
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: artifacts/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
