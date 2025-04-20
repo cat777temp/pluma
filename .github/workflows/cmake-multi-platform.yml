@@ -72,17 +72,40 @@ jobs:
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
     # 打包构建产物
-    - name: Package
+    - name: Create artifacts directory
+      run: mkdir -p artifacts
+      shell: bash
+
+    # Windows特定打包
+    - name: Package Windows
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        $buildDir = "${{ steps.strings.outputs.build-output-dir }}"
+        $binDir = Join-Path -Path $buildDir -ChildPath "bin\${{ matrix.build_type }}"
+        $libDir = Join-Path -Path $buildDir -ChildPath "lib\${{ matrix.build_type }}"
+
+        # 创建临时目录结构
+        $tempDir = Join-Path -Path $env:TEMP -ChildPath "pluma-package"
+        New-Item -Path $tempDir -ItemType Directory -Force | Out-Null
+
+        # 复制文件
+        if (Test-Path $binDir) {
+            Copy-Item -Path "$binDir\*" -Destination $tempDir -Recurse -Force
+        }
+        if (Test-Path $libDir) {
+            Copy-Item -Path "$libDir\*" -Destination $tempDir -Recurse -Force
+        }
+
+        # 压缩
+        Compress-Archive -Path "$tempDir\*" -DestinationPath "artifacts\pluma-${{ matrix.build_type }}-${{ matrix.c_compiler }}-windows.zip" -Force
+
+    # Linux/macOS打包
+    - name: Package Linux/macOS
+      if: matrix.os != 'windows-latest'
       shell: bash
       run: |
-        mkdir -p artifacts
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          # Windows打包
-          7z a -tzip artifacts/pluma-${{ matrix.build_type }}-${{ matrix.c_compiler }}-windows.zip ${{ steps.strings.outputs.build-output-dir }}/bin/${{ matrix.build_type }}/* ${{ steps.strings.outputs.build-output-dir }}/lib/${{ matrix.build_type }}/*
-        else
-          # Linux/macOS打包
-          tar -czvf artifacts/pluma-${{ matrix.build_type }}-${{ matrix.c_compiler }}-linux.tar.gz -C ${{ steps.strings.outputs.build-output-dir }} bin lib
-        fi
+        tar -czvf artifacts/pluma-${{ matrix.build_type }}-${{ matrix.c_compiler }}-linux.tar.gz -C ${{ steps.strings.outputs.build-output-dir }} bin lib
 
     # 上传构建产物作为工作流的成品
     - name: Upload Build Artifacts
