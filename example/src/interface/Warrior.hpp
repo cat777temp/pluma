@@ -11,6 +11,9 @@ class Warrior{
 public:
     virtual std::string getDescription() = 0;
     // (...)
+
+    // 添加虚拟析构函数
+    virtual ~Warrior() {}
 };
 
 
